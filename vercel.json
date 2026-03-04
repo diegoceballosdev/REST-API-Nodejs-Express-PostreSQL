@@ -12,11 +12,6 @@
             "dest": "src/index.js"
         },
         {
-            "src": "/(.*)",
-            "dest": "/public/$1",
-            "continue": true
-        },
-        {
             "handle": "filesystem"
         },
         {

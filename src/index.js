@@ -2,6 +2,7 @@ import express from "express";
 import { PORT } from "./config.js";
 import userRoutes from "./routes/users.routes.js";
 import morgan from "morgan";
+
 import path from "path";
 import { fileURLToPath } from "url";
 
