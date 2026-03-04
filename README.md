@@ -6,8 +6,6 @@ Esta es una API REST profesional construida con **Node.js** y **Express 5**, dis
 
 Incluye una interfaz de usuario (UI) moderna e interactiva con búsqueda en tiempo real, ordenamiento dinámico y operaciones CRUD completas.
 
-Deploy: https://rest-api-nodejs-express-postre-sql.vercel.app/
-
 ## 🛠️ Tecnologías utilizadas
 
 - **Backend:** Node.js (v24+), Express 5.
