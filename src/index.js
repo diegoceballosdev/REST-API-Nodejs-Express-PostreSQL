@@ -17,10 +17,19 @@ app.use(morgan("dev"));
 app.use(express.json());
 
 // Servir archivos estáticos desde la carpeta "public"
-app.use(express.static(path.join(__dirname, "../public")));
+app.use(express.static(path.join(process.cwd(), "public")));
 
 // 4. Rutas de la API
 app.use(userRoutes);
+
+// Esto se ejecutará para cualquier ruta que NO haya sido capturada por userRoutes
+app.use((req, res, next) => {
+  // Solo servimos el HTML si es una petición GET (para no romper posibles errores de POST)
+  if (req.method === "GET") {
+    return res.sendFile(path.join(process.cwd(), "public", "index.html"));
+  }
+  next();
+});
 
 // 5. Encendido del servidor
 if (process.env.NODE_ENV !== "production") {
