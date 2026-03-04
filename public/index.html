@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Usuarios | Kong API</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+      .sort-icon::after {
+        content: " ↕";
+        opacity: 0.3;
+        font-size: 0.8em;
+      }
+      .asc::after {
+        content: " ↑";
+        opacity: 1;
+      }
+      .desc::after {
+        content: " ↓";
+        opacity: 1;
+      }
+    </style>
+  </head>
+
+  <body class="bg-gray-100 p-4 md:p-8">
+    <div class="max-w-4xl mx-auto">
+      <h1 class="text-3xl font-bold text-gray-800 mb-8 text-center">
+        Gestión de Usuarios
+      </h1>
+
+      <div
+        class="bg-white p-6 rounded-lg shadow-md mb-6 border-t-4 border-indigo-600"
+      >
+        <h2 id="form-title" class="text-xl font-semibold mb-4 text-indigo-600">
+          Crear Nuevo Usuario
+        </h2>
+
+        <form id="user-form" class="flex flex-col md:flex-row gap-4">
+          <input type="hidden" id="user-id" />
+          <input
+            type="text"
+            id="user-name"
+            placeholder="Nombre completo"
+            required
+            class="flex-1 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none"
+          />
+          <input
+            type="email"
+            id="user-email"
+            placeholder="Correo electrónico"
+            required
+            class="flex-1 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none"
+          />
+          <button
+            type="submit"
+            id="submit-btn"
+            class="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700 transition font-bold"
+          >
+            Guardar
+          </button>
+          <button
+            type="button"
+            id="cancel-btn"
+            onclick="resetForm()"
+            class="hidden text-gray-500 hover:underline"
+          >
+            Cancelar
+          </button>
+        </form>
+      </div>
+
+      <div
+        class="mb-4 flex flex-col md:flex-row gap-4 items-center justify-between"
+      >
+        <div class="relative w-full md:w-72">
+          <input
+            type="text"
+            id="search-input"
+            oninput="filterAndRender()"
+            placeholder="Buscar por nombre o email..."
+            class="w-full pl-10 pr-4 py-2 border rounded-full shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+          />
+          <span class="absolute left-3 top-2.5 text-gray-400">🔍</span>
+        </div>
+        <span class="text-sm text-gray-500" id="user-count"
+          >Cargando usuarios...</span
+        >
+      </div>
+
+      <div
+        class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200"
+      >
+        <table class="w-full text-left border-collapse">
+          <thead class="bg-indigo-600 text-white">
+            <tr>
+              <th
+                class="p-4 cursor-pointer hover:bg-indigo-700 transition"
+                onclick="toggleSort('id')"
+              >
+                ID <span id="sort-id" class="sort-icon"></span>
+              </th>
+
+              <th
+                class="p-4 cursor-pointer hover:bg-indigo-700 transition"
+                onclick="toggleSort('name')"
+              >
+                Nombre <span id="sort-name" class="sort-icon"></span>
+              </th>
+
+              <th
+                class="p-4 cursor-pointer hover:bg-indigo-700 transition"
+                onclick="toggleSort('email')"
+              >
+                Email <span id="sort-email" class="sort-icon"></span>
+              </th>
+
+              <th class="p-4 text-center">Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody id="users-table-body" class="divide-y divide-gray-200"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <script>
+      let allUsers = [];
+      let currentSort = { column: "id", direction: "asc" };
+
+      const tableBody = document.getElementById("users-table-body");
+      const userForm = document.getElementById("user-form");
+
+      // 1. OBTENER USUARIOS
+      async function fetchUsers() {
+        try {
+          const res = await fetch("/users");
+          allUsers = await res.json();
+          filterAndRender();
+        } catch (err) {
+          console.error("Error", err);
+        }
+      }
+
+      // 2. FILTRAR Y RENDERIZAR
+      function filterAndRender() {
+        const searchTerm = document
+          .getElementById("search-input")
+          .value.toLowerCase();
+
+        // Filtrar
+        let filtered = allUsers.filter(
+          (u) =>
+            u.name.toLowerCase().includes(searchTerm) ||
+            u.email.toLowerCase().includes(searchTerm),
+        );
+
+        // Ordenar
+        filtered.sort((a, b) => {
+          let valA = a[currentSort.column];
+          let valB = b[currentSort.column];
+          if (typeof valA === "string") {
+            valA = valA.toLowerCase();
+            valB = valB.toLowerCase();
+          }
+          if (valA < valB) return currentSort.direction === "asc" ? -1 : 1;
+          if (valA > valB) return currentSort.direction === "asc" ? 1 : -1;
+          return 0;
+        });
+
+        document.getElementById("user-count").innerText =
+          `${filtered.length} usuarios encontrados`;
+
+        tableBody.innerHTML = filtered
+          .map(
+            (user) => `
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="p-4 text-gray-500">#${user.id}</td>
+                    <td class="p-4 font-semibold text-gray-800">${user.name}</td>
+                    <td class="p-4 text-gray-600">${user.email}</td>
+                    <td class="p-4 text-center space-x-3">
+                        <button onclick="editUser(${user.id}, '${user.name}', '${user.email}')" 
+                            class="text-indigo-600 hover:text-indigo-900 font-medium">Editar</button>
+                        <button onclick="deleteUser(${user.id})" 
+                            class="text-red-500 hover:text-red-700 font-medium">Eliminar</button>
+                    </td>
+                </tr>
+            `,
+          )
+          .join("");
+      }
+
+      // 3. LOGICA DE ORDENAMIENTO
+      function toggleSort(column) {
+        if (currentSort.column === column) {
+          currentSort.direction =
+            currentSort.direction === "asc" ? "desc" : "asc";
+        } else {
+          currentSort.column = column;
+          currentSort.direction = "asc";
+        }
+
+        // Actualizar iconos visuales
+        document
+          .querySelectorAll(".sort-icon")
+          .forEach((el) => (el.className = "sort-icon"));
+        document
+          .getElementById(`sort-${column}`)
+          .classList.add(currentSort.direction);
+
+        filterAndRender();
+      }
+
+      // --- Funciones CRUD ---
+      userForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const id = document.getElementById("user-id").value;
+        const name = document.getElementById("user-name").value;
+        const email = document.getElementById("user-email").value;
+        const method = id ? "PUT" : "POST";
+        const url = id ? `/users/${id}` : "/users";
+
+        const res = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email }),
+        });
+
+        if (res.ok) {
+          resetForm();
+          fetchUsers();
+        }
+      };
+
+      async function deleteUser(id) {
+        if (confirm("¿Eliminar usuario?")) {
+          await fetch(`/users/${id}`, { method: "DELETE" });
+          fetchUsers();
+        }
+      }
+
+      function editUser(id, name, email) {
+        document.getElementById("user-id").value = id;
+        document.getElementById("user-name").value = name;
+        document.getElementById("user-email").value = email;
+        document.getElementById("form-title").innerText =
+          "Editando Usuario #" + id;
+        document.getElementById("submit-btn").innerText = "Actualizar";
+        document.getElementById("cancel-btn").classList.remove("hidden");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function resetForm() {
+        userForm.reset();
+        document.getElementById("user-id").value = "";
+        document.getElementById("form-title").innerText = "Crear Nuevo Usuario";
+        document.getElementById("submit-btn").innerText = "Guardar";
+        document.getElementById("cancel-btn").classList.add("hidden");
+      }
+
+      fetchUsers();
+    </script>
+  </body>
+</html>
